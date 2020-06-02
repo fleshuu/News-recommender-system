@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js">"></script>
+	<link rel="stylesheet" href="/static/css.css">
+
+   <style>
+    * {
+      box-sizing: border-box;
+    }
+
+
+    .column {
+      float: left;
+      width: 33.33%;
+      padding: 10px;
+
+    }
+
+
+    .row:after {
+      content: "";
+      display: table;
+      clear: both;
+    }
+  </style>
+
+	<title>News Recommender</title>
+</head>
+<body>
+<div class="container">
+    <form method="POST">
+        <input type="radio" id="url" name="option" value="url" checked="checked">
+        <label for="url">Url</label><br>
+        <input type="radio" id="text" name="option" value="text">
+        <label for="text">Text</label><br>
+<!--        <input name="sent">-->
+        <textarea id="sent" name="sent" rows="4" cols="50"></textarea>
+        <input type="submit" class="button">
+    </form>
+</div>
+<div class="row">
+  <div class="column">
+      {% for ner in ners %}
+        <p>{{ ner }} </p>
+        {% endfor %}
+  </div>
+  <div class="column">
+      <bold>Topic Number: {{topicNumber}}</bold><br>
+        {% for word in words %}
+            <p>{{ word }} </p>
+        {% endfor %}
+  </div>
+</div>
+</body>
+</html>
