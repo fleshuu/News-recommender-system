@@ -46,11 +46,23 @@
         {% endfor %}
   </div>
   <div class="column">
-      <bold>Topic Number: {{topicNumber}}</bold><br>
+      {% if recommendation %}
+        <strong>Topic Number: {{topicNumber}}</strong><br>
         {% for word in words %}
             <p>{{ word }} </p>
         {% endfor %}
+      {% endif %}
   </div>
+    <div class="column">
+      {% if recommendation %}
+        <strong>Recommendations:</strong><br>
+        {% for url, t in recommendation %}
+            <hr>
+            <p>{{ url }} </p>
+            <p>{{ t[1] }} </p>
+        {% endfor %}
+      {% endif %}
+    </div>
 </div>
 </body>
 </html>

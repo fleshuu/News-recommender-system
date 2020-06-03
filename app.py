@@ -1,5 +1,5 @@
-import os
-from flask import Flask, flash, request, redirect, url_for, render_template
+import datetime
+from flask import Flask, request, render_template
 from recommender.TextProcessing import TextProcessing
 from deeppavlov import configs, build_model
 import json
@@ -12,10 +12,15 @@ tp = TextProcessing()
 ner_model = build_model(configs.ner.ner_ontonotes_bert_mult, download=True)
 with open("models/ner_dict.json") as json_file:
     ner_dict = json.load(json_file)
+with open("models/topic_url_dict.json") as json_file:
+    topic_url_dict = json.load(json_file)
 with open("models/topic_dict.json") as json_file:
     topic_dict = json.load(json_file)
 with open("models/view_topic_dict.json") as json_file:
     view_topic = json.load(json_file)
+with open("models/url_title_dict.json") as json_file:
+    url_title_dict = json.load(json_file)
+today = datetime.date.today()
 symbols = ['.', '!', '?', '।', '።', '။', '。', ',', ':', ';', '؟', '،', \
            ' ', '+', '-', '*', '/', '"', "'", '{', '}', '[', ']', '(', ')', '“']
 
@@ -46,7 +51,11 @@ def my_form_post():
 
     ner, topic = ner_topic(text)
     print(ner, topic)
-    return render_template('index.html', ners=ner, topicNumber=topic, words=view_topic[topic][:20])
+    recommendations = get_recommendations(ner, topic)
+    ordered_recommendations = order_recommendations(recommendations)
+    print(ordered_recommendations)
+    return render_template('index.html', ners=ner, topicNumber=topic,
+                           words=view_topic[topic][:20], recommendation=ordered_recommendations)
 
 
 def ner_topic(text):
@@ -99,6 +108,50 @@ def get_topic(list_text):
         break
 
     return topic
+
+
+def get_recommendations(ner_words, topic):
+    url_score = {}
+    for word, tag in ner_words:
+        if ner_dict.get(word):
+            for url, df in ner_dict.get(word):
+                if url_score.get(url):
+                    url_score[url] += df
+                else:
+                    url_score[url] = df
+    if topic_url_dict.get(topic):
+        for url in topic_url_dict.get(topic):
+            if url_score.get(url):
+                url_score[url] += 2
+            else:
+                url_score[url] = 2
+    return url_score
+
+
+def order_recommendations(url_score):
+    ordered = {}
+    for url, score in url_score.items():
+        url_title = url_title_dict.get(url)
+        if url_title:
+            create_date = url_title.get('created_date')
+            title = url_title['title']
+            year = int(create_date[:4])
+            month = int(create_date[5:7])
+            day = int(create_date[8:10])
+            date_of_url = datetime.date(year, month, day)
+            diff = today - date_of_url
+            diff_days = diff.days
+            if diff_days < 0:
+                print(url, date_of_url)
+                diff_days = 100
+            if diff_days > 370:
+                diff_days = 370 + diff_days // 10
+            shift_diff_days = diff_days + 1.1
+            multiplier = round(1/shift_diff_days, 4)
+            ordered[url] = [score * multiplier, title]
+    ordered = [[k, v] for k, v in sorted(ordered.items(), key=lambda item: item[1], reverse=True)]
+
+    return ordered[:10]
 
 
 if __name__ == '__main__':
